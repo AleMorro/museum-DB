@@ -1,0 +1,142 @@
+CREATE TABLE Utente
+(
+    Email VARCHAR(64) UNIQUE PRIMARY KEY,
+    Nome VARCHAR(32) NOT NULL,
+    Genere VARCHAR(32) NOT NULL,
+    Nascita DATE NOT NULL,
+    Tipo VARCHAR(32) NOT NULL
+);
+
+CREATE TABLE Artista
+(
+    NomeA VARCHAR(32) NOT NULL,
+    CognomeA VARCHAR(32) NOT NULL,
+    Nascita DATE NOT NULL,
+    Morte DATE,
+        CHECK(Nascita < Morte),
+    Stile VARCHAR(64) NOT NULL,
+    Movimento VARCHAR(64) NOT NULL,
+    CONSTRAINT PK_Artista PRIMARY KEY(NomeA, CognomeA)
+);
+
+CREATE TABLE Opera
+(
+    Cod INTEGER NOT NULL,
+    NomeArt VARCHAR(32) NOT NULL,
+    CognomeArt VARCHAR(32) NOT NULL,
+    Titolo_O VARCHAR(64) NOT NULL,
+    Descrizione TEXT NOT NULL,
+    Anno SMALLINT NOT NULL
+        CHECK(Anno < 2023),
+    Tecniche VARCHAR(64) NOT NULL,
+    Materiale VARCHAR(64) NOT NULL,
+    CONSTRAINT PK_Opera PRIMARY KEY(Cod),
+    CONSTRAINT FK_OpArt FOREIGN KEY(NomeArt,CognomeArt) REFERENCES Artista(NomeA,CognomeA)
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE Storia
+(
+    ID_S SERIAL UNIQUE,
+    Utente_S VARCHAR(64) NOT NULL DEFAULT 'Membro',
+    Titolo_S VARCHAR(64) NOT NULL,
+    Commento_S VARCHAR(128) NOT NULL,
+    Hashtag_S VARCHAR(16) NOT NULL,
+    Inizio TIME NOT NULL,
+    Fine TIME NOT NULL,
+        CHECK(Fine > Inizio),
+    Durata TIME NOT NULL,
+    CONSTRAINT PK_Storia PRIMARY KEY(ID_S),
+    CONSTRAINT FK_StoUt FOREIGN KEY(Utente_S) REFERENCES Utente(Email)
+        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT
+);
+
+CREATE TABLE Annotazione
+(
+    ID_A SERIAL UNIQUE,
+    Utente_A VARCHAR(64) NOT NULL DEFAULT 'Membro',
+    Cod_Op INTEGER NOT NULL,
+    Hashtag_A VARCHAR(16) NOT NULL,
+    Emoji VARCHAR(32) NOT NULL,
+    Commento_A VARCHAR(128) NOT NULL,
+    CONSTRAINT PK_Ann PRIMARY KEY(ID_A),
+    CONSTRAINT FK_AnnUt FOREIGN KEY(Utente_A) REFERENCES Utente(Email)
+        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT,
+    CONSTRAINT FK_AnnOp FOREIGN KEY(Cod_Op) REFERENCES Opera(Cod)
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE Domanda
+(
+    Annotazione INTEGER NOT NULL,
+    Mi_ricorda VARCHAR(32) NOT NULL,
+    Mi_fa_pensare_a VARCHAR(32) NOT NULL,
+    Mi_fa_sentire VARCHAR(32) NOT NULL,
+    CONSTRAINT PK_Dom PRIMARY KEY(Annotazione),
+    CONSTRAINT FK_DomAnn FOREIGN KEY(Annotazione) REFERENCES Annotazione(ID_A)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE Op_Sto
+(
+    Sto INTEGER NOT NULL,
+    Op INTEGER NOT NULL,
+    CONSTRAINT PK_OpSto PRIMARY KEY(Sto,Op),
+    CONSTRAINT FK_Sto FOREIGN KEY(Sto) REFERENCES Storia(ID_S)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_Op FOREIGN KEY(Op) REFERENCES Opera(Cod)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE Ranking
+(
+    Utente_R VARCHAR(64) NOT NULL DEFAULT 'Membro',
+    Sto_R INTEGER NOT NULL,
+    Voto INTEGER NOT NULL
+        CHECK(Voto <= 10 AND Voto >= 0),
+    Commento_R VARCHAR(128),
+    CONSTRAINT PK_Ranking PRIMARY KEY(Utente_R,Sto_R),
+    CONSTRAINT FK_RanUt FOREIGN KEY(Utente_R) REFERENCES Utente(Email)
+        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT,
+    CONSTRAINT FK_RanSto FOREIGN KEY(Sto_R) REFERENCES Storia(ID_S)
+        ON DELETE CASCADE
+);
+
+/* ID_S1 -> storia da raccomandare
+   ID_S2 -> storia raccomandata */
+CREATE TABLE Raccomandazioni
+(
+    ID_S1 INTEGER NOT NULL,
+    ID_S2 INTEGER NOT NULL,
+    Relazione VARCHAR(16) NOT NULL
+        CHECK(Relazione = 'simile' OR Relazione = 'uguale' OR Relazione = 'opposta'),
+    CONSTRAINT PK_Raccomandazioni PRIMARY KEY(ID_S1,ID_S2),
+    CONSTRAINT FK_ID_S1 FOREIGN KEY(ID_S1) REFERENCES Storia(ID_S)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_ID_S2 FOREIGN KEY(ID_S2) REFERENCES Storia(ID_S)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE Gruppo
+(
+    Num SERIAL PRIMARY KEY,
+    Supervisore VARCHAR(64) NOT NULL DEFAULT 'Membro',
+    CONSTRAINT FK_Sup FOREIGN KEY(Supervisore) REFERENCES Utente(Email)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE TABLE Gr_Afferenza
+(
+    Utente_Gr VARCHAR(64) PRIMARY KEY DEFAULT 'Membro',
+    Gruppo INTEGER NOT NULL,
+    CONSTRAINT FK_Gr FOREIGN KEY(Gruppo) REFERENCES Gruppo(Num)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT FK_AffUt FOREIGN KEY(Utente_Gr) REFERENCES Utente(Email)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
